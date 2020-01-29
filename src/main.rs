@@ -31,11 +31,11 @@ struct CommandOptions {
     path: String,
     show_long: bool,
     show_all: bool,
+    show_help: bool,
 }
 
 fn show_usage() {
     let message = b"
-
 Usage: ls [OPTION]... [PATH]
 
 A pointless implementation of the Unix ls command to help me learn how to write programs in Rust.
@@ -43,6 +43,7 @@ A pointless implementation of the Unix ls command to help me learn how to write 
 Arguments:
 -a --all        do not ignore entries starting with .
 -l --long       use long listing format
+-h --help       display this help dialog
 ";
     io::stdout().write_all(message).unwrap()
 }
@@ -88,6 +89,7 @@ fn parse_args(args: &mut Vec<String>) -> Result<CommandOptions, String> {
         path: String::from("."),
         show_long: false,
         show_all: false,
+        show_help: false,
     };
     // command name
     args.remove(0);
@@ -98,6 +100,8 @@ fn parse_args(args: &mut Vec<String>) -> Result<CommandOptions, String> {
             "--long" => opts.show_long = true,
             "-a" => opts.show_all = true,
             "--all" => opts.show_all = true,
+            "-h" => opts.show_help = true,
+            "--help" => opts.show_help = true,
             _ => return Err(String::from(next.as_str())),
         }
     }
@@ -145,6 +149,10 @@ fn main() {
     let options = parse_args(&mut args);
     match options {
         Ok(opts) => {
+            if opts.show_help {
+                show_usage();
+                exit(0);
+            }
             let files = get_files(opts.path);
             match files {
                 Ok(files) => {
@@ -157,8 +165,7 @@ fn main() {
             }
         }
         Err(err) => {
-            println!("invalid command line option: ");
-            println!("{}", err);
+            println!("invalid command line option: {}\n", err);
             show_usage();
             exit(1);
         }
