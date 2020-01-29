@@ -1,6 +1,8 @@
-use std::env;
-use std::fs;
+use std::env::args;
+use std::fs::{read_dir, DirEntry};
 use std::io::{self, Write};
+use std::process::exit;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug)]
 enum Kind {
@@ -21,7 +23,7 @@ struct File {
     name: String,
     kind: Kind,
     size: u64,
-    modified: std::time::SystemTime,
+    modified: SystemTime,
 }
 
 #[derive(Debug)]
@@ -45,7 +47,7 @@ Arguments:
     io::stdout().write_all(message).unwrap()
 }
 
-fn to_file(entry: fs::DirEntry) -> File {
+fn to_file(entry: DirEntry) -> File {
     let ft = entry.file_type().unwrap();
     let ftype = {
         if ft.is_dir() {
@@ -63,12 +65,12 @@ fn to_file(entry: fs::DirEntry) -> File {
         name: entry.file_name().into_string().unwrap(),
         kind: ftype,
         size: 0,
-        modified: std::time::SystemTime::now(),
+        modified: SystemTime::now(),
     }
 }
 
 fn get_files(path: String) -> Result<Vec<File>, std::io::Error> {
-    let entries = fs::read_dir(path);
+    let entries = read_dir(path);
     match entries {
         Ok(entries) => {
             let mut files: Vec<File> = Vec::new();
@@ -104,6 +106,7 @@ fn parse_args(args: Vec<String>) -> Result<CommandOptions, String> {
 }
 
 fn display_files(files: Vec<File>, long: bool, all: bool) {
+    let mut stdout = io::stdout();
     for (index, file) in files.iter().enumerate() {
         if file.name.starts_with('.') && !all {
             continue;
@@ -118,28 +121,28 @@ fn display_files(files: Vec<File>, long: bool, all: bool) {
             }
             let unix = file
                 .modified
-                .duration_since(std::time::UNIX_EPOCH)
+                .duration_since(UNIX_EPOCH)
                 .unwrap()
                 .as_secs()
                 .to_string();
-            io::stdout().write_all(display_value.as_bytes()).unwrap();
-            io::stdout().write_all(b" ").unwrap();
-            io::stdout().write_all(unix.as_bytes()).unwrap();
-            io::stdout().write_all(b" ").unwrap();
-            io::stdout().write_all(file.name.as_bytes()).unwrap();
+            stdout.write_all(display_value.as_bytes()).unwrap();
+            stdout.write_all(b" ").unwrap();
+            stdout.write_all(unix.as_bytes()).unwrap();
+            stdout.write_all(b" ").unwrap();
+            stdout.write_all(file.name.as_bytes()).unwrap();
         } else {
-            io::stdout().write_all(file.name.as_bytes()).unwrap();
+            stdout.write_all(file.name.as_bytes()).unwrap();
         }
         if index == files.len() || long {
-            io::stdout().write_all(b"\n").unwrap()
+            stdout.write_all(b"\n").unwrap()
         } else {
-            io::stdout().write_all(b" ").unwrap()
+            stdout.write_all(b" ").unwrap()
         }
     }
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
+    let args: Vec<String> = args().collect();
     let options = parse_args(args);
     match options {
         Ok(opts) => {
@@ -150,7 +153,7 @@ fn main() {
                 }
                 Err(err) => {
                     println!("{}", err);
-                    std::process::exit(1);
+                    exit(1);
                 }
             }
         }
@@ -158,7 +161,7 @@ fn main() {
             println!("invalid command line option: ");
             println!("{}", err);
             show_usage();
-            std::process::exit(1);
+            exit(1);
         }
     }
 }
