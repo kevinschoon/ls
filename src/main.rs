@@ -83,17 +83,16 @@ fn get_files(path: String) -> Result<Vec<File>, std::io::Error> {
     }
 }
 
-fn parse_args(args: Vec<String>) -> Result<CommandOptions, String> {
-    let mut _args = args.clone();
+fn parse_args(args: &mut Vec<String>) -> Result<CommandOptions, String> {
     let mut opts = CommandOptions {
         path: String::from("."),
         show_long: false,
         show_all: false,
     };
     // command name
-    _args.remove(0);
+    args.remove(0);
     // process remaining flags
-    while let Some(next) = _args.pop() {
+    while let Some(next) = args.pop() {
         match next.as_str() {
             "-l" => opts.show_long = true,
             "--long" => opts.show_long = true,
@@ -142,8 +141,8 @@ fn display_files(files: Vec<File>, long: bool, all: bool) {
 }
 
 fn main() {
-    let args: Vec<String> = args().collect();
-    let options = parse_args(args);
+    let mut args: Vec<String> = args().collect();
+    let options = parse_args(&mut args);
     match options {
         Ok(opts) => {
             let files = get_files(opts.path);
