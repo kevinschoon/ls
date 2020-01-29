@@ -146,28 +146,24 @@ fn display_files(files: Vec<File>, long: bool, all: bool) {
 
 fn main() {
     let mut args: Vec<String> = args().collect();
-    let options = parse_args(&mut args);
-    match options {
-        Ok(opts) => {
-            if opts.show_help {
-                show_usage();
-                exit(0);
-            }
-            let files = get_files(opts.path);
-            match files {
-                Ok(files) => {
-                    display_files(files, opts.show_long, opts.show_all);
-                }
-                Err(err) => {
-                    println!("{}", err);
-                    exit(1);
-                }
-            }
-        }
+    let options = match parse_args(&mut args) {
+        Ok(opts) => opts,
         Err(err) => {
             println!("invalid command line option: {}\n", err);
             show_usage();
             exit(1);
         }
+    };
+    if options.show_help {
+        show_usage();
+        exit(0);
     }
+    let files = match get_files(options.path) {
+        Ok(files) => files,
+        Err(err) => {
+            println!("{}\n", err);
+            exit(1);
+        }
+    };
+    display_files(files, options.show_long, options.show_all);
 }
