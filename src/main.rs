@@ -114,33 +114,34 @@ fn display_files(files: Vec<File>, long: bool, all: bool) {
         if file.name.starts_with('.') && !all {
             continue;
         }
+        let mut display_value = String::new();
         if long {
-            let mut display_value = String::new();
             // TODO I do not know how to properly format unix permissions
             match file.kind {
                 Kind::File => display_value.push_str("-F-"),
                 Kind::Dir => display_value.push_str("-D-"),
                 Kind::Link => display_value.push_str("-L-"),
             }
-            let unix = file
+            let unix_time = file
                 .modified
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
                 .as_secs()
                 .to_string();
-            stdout.write_all(display_value.as_bytes()).unwrap();
-            stdout.write_all(b" ").unwrap();
-            stdout.write_all(unix.as_bytes()).unwrap();
-            stdout.write_all(b" ").unwrap();
-            stdout.write_all(file.name.as_bytes()).unwrap();
-            stdout.write_all(b"\n").unwrap()
+            let unix_time = unix_time.as_str();
+            display_value.push_str(" ");
+            display_value.push_str(unix_time);
+            display_value.push_str(" ");
+            display_value.push_str(file.name.as_str());
+            display_value.push_str("\n");
         } else {
-            stdout.write_all(file.name.as_bytes()).unwrap();
-            stdout.write_all(b" ").unwrap();
+            display_value.push_str(file.name.as_str());
+            display_value.push_str(" ");
         }
         if index == files.len() - 1 && !long {
-            stdout.write_all(b"\n").unwrap()
+            display_value.push_str("\n");
         }
+        stdout.write_all(display_value.as_bytes()).unwrap();
     }
 }
 
