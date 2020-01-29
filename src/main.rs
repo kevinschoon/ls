@@ -130,13 +130,13 @@ fn display_files(files: Vec<File>, long: bool, all: bool) {
             stdout.write_all(unix.as_bytes()).unwrap();
             stdout.write_all(b" ").unwrap();
             stdout.write_all(file.name.as_bytes()).unwrap();
-        } else {
-            stdout.write_all(file.name.as_bytes()).unwrap();
-        }
-        if index == files.len() || long {
             stdout.write_all(b"\n").unwrap()
         } else {
-            stdout.write_all(b" ").unwrap()
+            stdout.write_all(file.name.as_bytes()).unwrap();
+            stdout.write_all(b" ").unwrap();
+        }
+        if index == files.len() - 1 && !long {
+            stdout.write_all(b"\n").unwrap()
         }
     }
 }
