@@ -1,7 +1,12 @@
+mod error;
+
+pub use crate::error::{LSError, LSErrorKind};
+
 use std::env::args;
 use std::fs::{read_dir, DirEntry};
 use std::io::{self, Write};
 use std::process::exit;
+use std::string::String;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 #[derive(Debug)]
@@ -62,29 +67,32 @@ fn to_file(entry: DirEntry) -> File {
             Kind::File
         }
     };
+    let md = entry.metadata().unwrap();
     File {
         name: entry.file_name().into_string().unwrap(),
         kind: ftype,
-        size: 0,
+        size: md.len(),
         modified: SystemTime::now(),
     }
 }
 
-fn get_files(path: String) -> Result<Vec<File>, std::io::Error> {
-    let entries = read_dir(path);
+fn get_files(path: String) -> Result<Vec<File>, LSError> {
+    let entries = read_dir(path.clone());
     match entries {
         Ok(entries) => {
             let mut files: Vec<File> = Vec::new();
-            for entry in entries {
-                files.push(to_file(entry.unwrap()));
-            }
+            entries.for_each(|entry| files.push(to_file(entry.unwrap())));
+
             Ok(files)
         }
-        Err(err) => Err(err),
+        Err(_) => Err(LSError {
+            message: String::from(path.as_str()),
+            kind: LSErrorKind::PermissionDenied,
+        }),
     }
 }
 
-fn parse_args(args: &mut Vec<String>) -> Result<CommandOptions, String> {
+fn parse_args(args: &mut Vec<String>) -> Result<CommandOptions, LSError> {
     let mut opts = CommandOptions {
         path: String::from("."),
         show_long: false,
@@ -102,7 +110,12 @@ fn parse_args(args: &mut Vec<String>) -> Result<CommandOptions, String> {
             "--all" => opts.show_all = true,
             "-h" => opts.show_help = true,
             "--help" => opts.show_help = true,
-            _ => return Err(String::from(next.as_str())),
+            value => {
+                return Err(LSError {
+                    kind: LSErrorKind::InvalidArguments,
+                    message: String::from(value),
+                })
+            }
         }
     }
     Ok(opts)
@@ -122,6 +135,9 @@ fn display_files(files: Vec<File>, long: bool, all: bool) {
                 Kind::Dir => display_value.push_str("-D-"),
                 Kind::Link => display_value.push_str("-L-"),
             }
+            // TODO user/group
+            display_value.push_str(" ? ? ");
+            display_value.push_str(format!("{}", file.size).as_str());
             let unix_time = file
                 .modified
                 .duration_since(UNIX_EPOCH)
