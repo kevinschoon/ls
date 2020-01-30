@@ -144,7 +144,7 @@ fn display_files(files: Vec<File>, long: bool, all: bool) {
                 Kind::Dir => {}
                 Kind::Link => {}
             }
-            display_value.push_str(format!("{}", file.mode).as_str());
+            display_value.push_str(format!("{}", file.mode & 0o7777).as_str());
             // TODO user/group
             display_value.push_str(format!(" {} {} ", file.uid, file.gid).as_str());
             display_value.push_str(format!("{}", file.size).as_str());
