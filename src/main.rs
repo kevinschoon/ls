@@ -5,6 +5,8 @@ pub use crate::error::{LSError, LSErrorKind};
 use std::env::args;
 use std::fs::{read_dir, DirEntry};
 use std::io::{self, Write};
+use std::os::linux::fs::MetadataExt;
+use std::os::unix::fs::PermissionsExt;
 use std::process::exit;
 use std::string::String;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -28,6 +30,9 @@ struct File {
     name: String,
     kind: Kind,
     size: u64,
+    uid: u32,
+    gid: u32,
+    mode: u32,
     modified: SystemTime,
 }
 
@@ -68,10 +73,14 @@ fn to_file(entry: DirEntry) -> File {
         }
     };
     let md = entry.metadata().unwrap();
+    let perms = md.permissions();
     File {
         name: entry.file_name().into_string().unwrap(),
         kind: ftype,
         size: md.len(),
+        uid: md.st_uid(),
+        gid: md.st_gid(),
+        mode: perms.mode(),
         modified: SystemTime::now(),
     }
 }
@@ -131,12 +140,13 @@ fn display_files(files: Vec<File>, long: bool, all: bool) {
         if long {
             // TODO I do not know how to properly format unix permissions
             match file.kind {
-                Kind::File => display_value.push_str("-F-"),
-                Kind::Dir => display_value.push_str("-D-"),
-                Kind::Link => display_value.push_str("-L-"),
+                Kind::File => {}
+                Kind::Dir => {}
+                Kind::Link => {}
             }
+            display_value.push_str(format!("{}", file.mode).as_str());
             // TODO user/group
-            display_value.push_str(" ? ? ");
+            display_value.push_str(format!(" {} {} ", file.uid, file.gid).as_str());
             display_value.push_str(format!("{}", file.size).as_str());
             let unix_time = file
                 .modified
