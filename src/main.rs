@@ -1,6 +1,8 @@
 mod error;
+mod helper;
 
 pub use crate::error::{LSError, LSErrorKind};
+pub use crate::helper::pad_strings;
 
 use std::env::args;
 use std::fs::{read_dir, DirEntry};
@@ -130,44 +132,38 @@ fn parse_args(args: &mut Vec<String>) -> Result<CommandOptions, LSError> {
     Ok(opts)
 }
 
-fn display_files(files: Vec<File>, long: bool, all: bool) {
-    let mut stdout = io::stdout();
-    for (index, file) in files.iter().enumerate() {
-        if file.name.starts_with('.') && !all {
-            continue;
+fn display_short(files: &[File]) {
+    for file in files {
+        print!("{} ", file.name)
+    }
+    println!(" ")
+}
+
+fn display_long(files: &[File]) {
+    let rows: Vec<Vec<String>> = files
+        .iter()
+        .map(|f| {
+            [
+                String::from(format!("{}", f.mode & 0o7777).as_str()),
+                String::from(format!("{}", f.uid).as_str()),
+                String::from(format!("{}", f.gid).as_str()),
+                String::from(format!("{}", f.size).as_str()),
+                f.modified
+                    .duration_since(UNIX_EPOCH)
+                    .unwrap()
+                    .as_secs()
+                    .to_string(),
+                f.name.clone(),
+            ]
+            .to_vec()
+        })
+        .collect();
+    let rows = pad_strings(rows);
+    for row in rows {
+        for col in row {
+            print!("{} ", col)
         }
-        let mut display_value = String::new();
-        if long {
-            // TODO I do not know how to properly format unix permissions
-            match file.kind {
-                Kind::File => {}
-                Kind::Dir => {}
-                Kind::Link => {}
-            }
-            display_value.push_str(format!("{}", file.mode & 0o7777).as_str());
-            // TODO user/group
-            display_value.push_str(format!(" {} {} ", file.uid, file.gid).as_str());
-            display_value.push_str(format!("{}", file.size).as_str());
-            let unix_time = file
-                .modified
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_secs()
-                .to_string();
-            let unix_time = unix_time.as_str();
-            display_value.push_str(" ");
-            display_value.push_str(unix_time);
-            display_value.push_str(" ");
-            display_value.push_str(file.name.as_str());
-            display_value.push_str("\n");
-        } else {
-            display_value.push_str(file.name.as_str());
-            display_value.push_str(" ");
-        }
-        if index == files.len() - 1 && !long {
-            display_value.push_str("\n");
-        }
-        stdout.write_all(display_value.as_bytes()).unwrap();
+        println!(" ")
     }
 }
 
@@ -192,5 +188,9 @@ fn main() {
             exit(1);
         }
     };
-    display_files(files, options.show_long, options.show_all);
+    if options.show_long {
+        display_long(&files)
+    } else {
+        display_short(&files)
+    }
 }
