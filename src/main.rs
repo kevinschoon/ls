@@ -60,6 +60,18 @@ Arguments:
     io::stdout().write_all(message).unwrap()
 }
 
+fn unknown_file() -> File {
+    File {
+        name: String::from("???"),
+        kind: Kind::File,
+        size: 0,
+        uid: 0,
+        gid: 0,
+        mode: 0,
+        modified: std::time::SystemTime::now(),
+    }
+}
+
 fn to_file(entry: DirEntry) -> File {
     let ft = entry.file_type().unwrap();
     let ftype = {
@@ -76,8 +88,9 @@ fn to_file(entry: DirEntry) -> File {
     };
     let md = entry.metadata().unwrap();
     let perms = md.permissions();
+    let file_name = entry.file_name().into_string().unwrap();
     File {
-        name: entry.file_name().into_string().unwrap(),
+        name: file_name,
         kind: ftype,
         size: md.len(),
         uid: md.st_uid(),
@@ -87,13 +100,22 @@ fn to_file(entry: DirEntry) -> File {
     }
 }
 
-fn get_files(path: String) -> Result<Vec<File>, LSError> {
+fn get_files(path: String, show_all: bool) -> Result<Vec<File>, LSError> {
     let entries = read_dir(path.clone());
     match entries {
         Ok(entries) => {
-            let mut files: Vec<File> = Vec::new();
-            entries.for_each(|entry| files.push(to_file(entry.unwrap())));
-
+            let files: Vec<File> = entries
+                .map(|entry| match entry {
+                    Ok(entry) => to_file(entry),
+                    _ => unknown_file(),
+                })
+                .filter(|file| {
+                    if !show_all && file.name.starts_with('.') {
+                        return false;
+                    }
+                    true
+                })
+                .collect();
             Ok(files)
         }
         Err(_) => Err(LSError {
@@ -181,7 +203,7 @@ fn main() {
         show_usage();
         exit(0);
     }
-    let files = match get_files(options.path) {
+    let files = match get_files(options.path, options.show_all) {
         Ok(files) => files,
         Err(err) => {
             println!("{}\n", err);
