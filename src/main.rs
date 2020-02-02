@@ -132,32 +132,41 @@ fn get_files(path: String, show_all: bool) -> Result<Vec<File>, LSError> {
 }
 
 fn parse_args(args: &mut Vec<String>) -> Result<CommandOptions, LSError> {
-    let mut opts = CommandOptions {
-        path: String::from("."),
-        show_long: false,
-        show_all: false,
-        show_help: false,
-    };
+    let default_path = String::from(".");
+    let mut path: Option<String> = None;
+    let mut show_long = false;
+    let mut show_all = false;
+    let mut show_help = false;
     // command name
     args.remove(0);
     // process remaining flags
     while let Some(next) = args.pop() {
         match next.as_str() {
-            "-l" => opts.show_long = true,
-            "--long" => opts.show_long = true,
-            "-a" => opts.show_all = true,
-            "--all" => opts.show_all = true,
-            "-h" => opts.show_help = true,
-            "--help" => opts.show_help = true,
-            value => {
-                return Err(LSError {
-                    kind: LSErrorKind::InvalidArguments,
-                    message: String::from(value),
-                })
-            }
+            "-l" => show_long = true,
+            "--long" => show_long = true,
+            "-a" => show_all = true,
+            "--all" => show_all = true,
+            "-h" => show_help = true,
+            "--help" => show_help = true,
+            value => match path {
+                Some(_) => {
+                    return Err(LSError {
+                        kind: LSErrorKind::InvalidArguments,
+                        message: String::from(value),
+                    })
+                }
+                None => {
+                    path = Some(value.to_string());
+                }
+            },
         }
     }
-    Ok(opts)
+    Ok(CommandOptions {
+        path: path.unwrap_or(default_path),
+        show_long,
+        show_all,
+        show_help,
+    })
 }
 
 fn display_short(files: &[File]) {
