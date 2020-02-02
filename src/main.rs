@@ -8,6 +8,7 @@ use std::env::args;
 use std::fs::{read_dir, DirEntry};
 use std::io::{self, Write};
 use std::os::linux::fs::MetadataExt;
+use std::os::unix::fs::FileTypeExt;
 use std::os::unix::fs::PermissionsExt;
 use std::process::exit;
 use std::string::String;
@@ -18,13 +19,10 @@ enum Kind {
     File,
     Dir,
     Link,
-    /*
-    TODO
-    Char,
+    Fifo,
     Block,
+    Char,
     Socket,
-    Pipe,
-    */
 }
 
 #[derive(Debug)]
@@ -81,9 +79,17 @@ fn to_file(entry: DirEntry) -> File {
             Kind::File
         } else if ft.is_symlink() {
             Kind::Link
+        } else if ft.is_block_device() {
+            Kind::Block
+        } else if ft.is_char_device() {
+            Kind::Char
+        } else if ft.is_fifo() {
+            Kind::Fifo
+        } else if ft.is_socket() {
+            Kind::Socket
         } else {
             // Non-Unix platform??
-            Kind::File
+            panic!("unknown file type")
         }
     };
     let md = entry.metadata().unwrap();
