@@ -10,14 +10,14 @@ use std::env::args;
 use std::process::exit;
 use std::time::UNIX_EPOCH;
 
-fn display_short(files: &[File]) {
+fn display_short(files: Vec<File>) {
     for file in files {
         print!("{}  ", file.name)
     }
     println!(" ")
 }
 
-fn display_long(files: &[File]) {
+fn display_long(files: Vec<File>) {
     let rows: Vec<Vec<String>> = files
         .iter()
         .map(|f| {
@@ -56,8 +56,8 @@ fn main() {
         }
     };
     if opts.show_long {
-        display_long(&files)
+        display_long(files)
     } else {
-        display_short(&files)
+        display_short(files)
     }
 }

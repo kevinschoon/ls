@@ -1,32 +1,24 @@
 // pad_strings takes vector of rows of columns and pads them
 // to evenly display on a terminal. The last column will not
 // be padded.
-// TODO: Terribly inefficient
-// TODO: Probably should return an iterator?
-// TODO: There is a redundant copy
 pub fn pad_strings(rows: Vec<Vec<String>>) -> Vec<Vec<String>> {
-    // maximum length of each column
-    let maximums: Vec<usize> = Vec::new();
-    let maximums = rows.iter().fold(maximums, |acc, row| {
-        // column lengths of each row
+    // maximum length of each column of each row
+    let mut maximums: Vec<usize> = Vec::new();
+    for row in rows.iter() {
+        // cell lengths of each column in this row
         let col_lengths: Vec<usize> = row.iter().map(|x| x.len()).collect();
-        let next: Vec<usize> = if acc.len() < col_lengths.len() {
-            // grow maximum length vector on first
-            // iteration or when rows have a different
-            // number of columns
-            let other = col_lengths.as_slice().get(acc.len()..).unwrap();
-            let mut next = acc.clone();
-            next.extend_from_slice(other);
-            next
-        } else {
-            acc
-        };
-        // check if there is a larger column
-        next.iter()
+        // grow the maximums column vector as needed
+        if maximums.len() < row.len() {
+            let adjusted = col_lengths.get(maximums.len()..).unwrap();
+            maximums.extend_from_slice(adjusted);
+        }
+        // check for larger cells
+        maximums = maximums
+            .iter()
             .enumerate()
-            .map(|(i, x)| *std::cmp::max(x, col_lengths.get(i).unwrap()))
+            .map(|(i, len)| *std::cmp::max(len, col_lengths.get(i).unwrap()))
             .collect()
-    });
+    }
     // pad each column with the maximum column length
     let padded: Vec<Vec<String>> = rows
         .iter()
@@ -39,22 +31,13 @@ pub fn pad_strings(rows: Vec<Vec<String>>) -> Vec<Vec<String>> {
                         String::from(col)
                     } else {
                         let n = maximums.get(i).unwrap();
-                        pad_n(col.to_string(), *n - col.len())
+                        let mut padded_cell = " ".repeat(*n - col.len());
+                        padded_cell.push_str(col.as_str());
+                        padded_cell
                     }
                 })
                 .collect()
         })
         .collect();
     padded
-}
-
-fn pad_n(value: String, n: usize) -> String {
-    let mut out = String::new();
-    let mut i = 0;
-    while i < n {
-        i += 1;
-        out.push(' ')
-    }
-    out.push_str(value.as_str());
-    out
 }
