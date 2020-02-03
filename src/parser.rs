@@ -18,6 +18,7 @@ pub struct CommandOptions {
     pub path: String,
     pub show_long: bool,
     pub show_all: bool,
+    pub sort_lex: bool,
     pub show_help: bool,
 }
 
@@ -28,8 +29,9 @@ Usage: ls [OPTION]... [PATH]
 A pointless implementation of the Unix ls command to help me learn how to write programs in Rust.
 
 Arguments:
--a --all        do not ignore entries starting with .
 -l --long       use long listing format
+-a --all        do not ignore entries starting with \".\"
+-s --sort       sort names lexicographically
 -h --help       display this help dialog
 ";
     println!("{}", message);
@@ -41,6 +43,7 @@ fn _parse(args: &mut Vec<String>) -> Result<CommandOptions, ParserError> {
     let mut show_long = false;
     let mut show_all = false;
     let mut show_help = false;
+    let mut sort_lex = false;
     // command name
     args.remove(0);
     // process remaining flags
@@ -50,6 +53,8 @@ fn _parse(args: &mut Vec<String>) -> Result<CommandOptions, ParserError> {
             "--long" => show_long = true,
             "-a" => show_all = true,
             "--all" => show_all = true,
+            "-s" => sort_lex = true,
+            "--sort" => sort_lex = true,
             "-h" => show_help = true,
             "--help" => show_help = true,
             value => match path {
@@ -69,6 +74,7 @@ fn _parse(args: &mut Vec<String>) -> Result<CommandOptions, ParserError> {
         show_long,
         show_all,
         show_help,
+        sort_lex,
     })
 }
 
