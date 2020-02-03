@@ -4,7 +4,6 @@ use std::os::unix::fs::FileTypeExt;
 use std::os::unix::fs::PermissionsExt;
 use std::time::SystemTime;
 
-#[derive(Debug)]
 pub enum Kind {
     File,
     Dir,
@@ -15,11 +14,11 @@ pub enum Kind {
     Socket,
 }
 
-#[derive(Debug)]
 pub struct File {
     pub name: String,
     pub kind: Kind,
     pub size: u64,
+    pub ino: u64,
     pub uid: u32,
     pub gid: u32,
     pub mode: u32,
@@ -31,6 +30,7 @@ fn unknown_file() -> File {
         name: String::from("???"),
         kind: Kind::File,
         size: 0,
+        ino: 0,
         uid: 0,
         gid: 0,
         mode: 0,
@@ -67,6 +67,7 @@ fn to_file(entry: DirEntry) -> File {
         name: file_name,
         kind: ftype,
         size: md.len(),
+        ino: md.st_ino(),
         uid: md.st_uid(),
         gid: md.st_gid(),
         mode: perms.mode(),
@@ -74,9 +75,9 @@ fn to_file(entry: DirEntry) -> File {
     }
 }
 
-pub fn get_files(path: String, show_all: bool) -> std::io::Result<Vec<File>> {
+pub fn get_files(path: String, show_all: bool, sort_lex: bool) -> std::io::Result<Vec<File>> {
     let entries = read_dir(path)?;
-    let files: Vec<File> = entries
+    let mut files: Vec<File> = entries
         .map(|entry| match entry {
             Ok(entry) => to_file(entry),
             _ => unknown_file(),
@@ -88,5 +89,8 @@ pub fn get_files(path: String, show_all: bool) -> std::io::Result<Vec<File>> {
             true
         })
         .collect();
+    if sort_lex {
+        files.sort_by(|a, b| a.name.cmp(&b.name));
+    }
     Ok(files)
 }

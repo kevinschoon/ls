@@ -48,7 +48,7 @@ fn display_long(files: &[File]) {
 fn main() {
     let mut args: Vec<String> = args().collect();
     let opts = parse(&mut args);
-    let files = match get_files(opts.path, opts.show_all) {
+    let files = match get_files(opts.path, opts.show_all, opts.sort_lex) {
         Ok(files) => files,
         Err(err) => {
             println!("{}\n", err);

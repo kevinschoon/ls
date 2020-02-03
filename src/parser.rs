@@ -29,10 +29,10 @@ Usage: ls [OPTION]... [PATH]
 A pointless implementation of the Unix ls command to help me learn how to write programs in Rust.
 
 Arguments:
--l --long       use long listing format
--a --all        do not ignore entries starting with \".\"
--s --sort       sort names lexicographically
--h --help       display this help dialog
+-l --long (false)   use long listing format
+-a --all  (false)   do not ignore entries starting with \".\"
+-s --sort (true)    sort names lexicographically
+-h --help           display this help dialog
 ";
     println!("{}", message);
 }
@@ -43,7 +43,7 @@ fn _parse(args: &mut Vec<String>) -> Result<CommandOptions, ParserError> {
     let mut show_long = false;
     let mut show_all = false;
     let mut show_help = false;
-    let mut sort_lex = false;
+    let mut sort_lex = true;
     // command name
     args.remove(0);
     // process remaining flags
