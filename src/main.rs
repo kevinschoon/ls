@@ -1,12 +1,11 @@
-mod error;
 mod helper;
+mod parser;
 
-pub use crate::error::{LSError, LSErrorKind};
 pub use crate::helper::pad_strings;
+pub use crate::parser::parse;
 
 use std::env::args;
 use std::fs::{read_dir, DirEntry};
-use std::io::{self, Write};
 use std::os::linux::fs::MetadataExt;
 use std::os::unix::fs::FileTypeExt;
 use std::os::unix::fs::PermissionsExt;
@@ -34,28 +33,6 @@ struct File {
     gid: u32,
     mode: u32,
     modified: SystemTime,
-}
-
-#[derive(Debug)]
-struct CommandOptions {
-    path: String,
-    show_long: bool,
-    show_all: bool,
-    show_help: bool,
-}
-
-fn show_usage() {
-    let message = b"
-Usage: ls [OPTION]... [PATH]
-
-A pointless implementation of the Unix ls command to help me learn how to write programs in Rust.
-
-Arguments:
--a --all        do not ignore entries starting with .
--l --long       use long listing format
--h --help       display this help dialog
-";
-    io::stdout().write_all(message).unwrap()
 }
 
 fn unknown_file() -> File {
@@ -106,67 +83,21 @@ fn to_file(entry: DirEntry) -> File {
     }
 }
 
-fn get_files(path: String, show_all: bool) -> Result<Vec<File>, LSError> {
-    let entries = read_dir(path.clone());
-    match entries {
-        Ok(entries) => {
-            let files: Vec<File> = entries
-                .map(|entry| match entry {
-                    Ok(entry) => to_file(entry),
-                    _ => unknown_file(),
-                })
-                .filter(|file| {
-                    if !show_all && file.name.starts_with('.') {
-                        return false;
-                    }
-                    true
-                })
-                .collect();
-            Ok(files)
-        }
-        Err(_) => Err(LSError {
-            message: String::from(path.as_str()),
-            kind: LSErrorKind::PermissionDenied,
-        }),
-    }
-}
-
-fn parse_args(args: &mut Vec<String>) -> Result<CommandOptions, LSError> {
-    let default_path = String::from(".");
-    let mut path: Option<String> = None;
-    let mut show_long = false;
-    let mut show_all = false;
-    let mut show_help = false;
-    // command name
-    args.remove(0);
-    // process remaining flags
-    while let Some(next) = args.pop() {
-        match next.as_str() {
-            "-l" => show_long = true,
-            "--long" => show_long = true,
-            "-a" => show_all = true,
-            "--all" => show_all = true,
-            "-h" => show_help = true,
-            "--help" => show_help = true,
-            value => match path {
-                Some(_) => {
-                    return Err(LSError {
-                        kind: LSErrorKind::InvalidArguments,
-                        message: String::from(value),
-                    })
-                }
-                None => {
-                    path = Some(value.to_string());
-                }
-            },
-        }
-    }
-    Ok(CommandOptions {
-        path: path.unwrap_or(default_path),
-        show_long,
-        show_all,
-        show_help,
-    })
+fn get_files(path: String, show_all: bool) -> std::io::Result<Vec<File>> {
+    let entries = read_dir(path)?;
+    let files: Vec<File> = entries
+        .map(|entry| match entry {
+            Ok(entry) => to_file(entry),
+            _ => unknown_file(),
+        })
+        .filter(|file| {
+            if !show_all && file.name.starts_with('.') {
+                return false;
+            }
+            true
+        })
+        .collect();
+    Ok(files)
 }
 
 fn display_short(files: &[File]) {
@@ -206,26 +137,15 @@ fn display_long(files: &[File]) {
 
 fn main() {
     let mut args: Vec<String> = args().collect();
-    let options = match parse_args(&mut args) {
-        Ok(opts) => opts,
-        Err(err) => {
-            println!("invalid command line option: {}\n", err);
-            show_usage();
-            exit(1);
-        }
-    };
-    if options.show_help {
-        show_usage();
-        exit(0);
-    }
-    let files = match get_files(options.path, options.show_all) {
+    let opts = parse(&mut args);
+    let files = match get_files(opts.path, opts.show_all) {
         Ok(files) => files,
         Err(err) => {
             println!("{}\n", err);
             exit(1);
         }
     };
-    if options.show_long {
+    if opts.show_long {
         display_long(&files)
     } else {
         display_short(&files)
