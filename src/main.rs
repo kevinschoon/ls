@@ -12,7 +12,7 @@ use std::time::UNIX_EPOCH;
 
 fn display_short(files: &[File]) {
     for file in files {
-        print!("{} ", file.name)
+        print!("{}  ", file.name)
     }
     println!(" ")
 }
