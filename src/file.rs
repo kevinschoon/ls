@@ -25,19 +25,6 @@ pub struct File {
     pub modified: SystemTime,
 }
 
-fn unknown_file() -> File {
-    File {
-        name: String::from("???"),
-        kind: Kind::File,
-        size: 0,
-        ino: 0,
-        uid: 0,
-        gid: 0,
-        mode: 0,
-        modified: std::time::SystemTime::now(),
-    }
-}
-
 fn to_file(entry: DirEntry) -> File {
     let ft = entry.file_type().unwrap();
     let ftype = {
@@ -80,7 +67,7 @@ pub fn get_files(path: String, show_all: bool, sort_lex: bool) -> std::io::Resul
     let mut files: Vec<File> = entries
         .map(|entry| match entry {
             Ok(entry) => to_file(entry),
-            _ => unknown_file(),
+            e => panic!(e),
         })
         .filter(|file| {
             if !show_all && file.name.starts_with('.') {
