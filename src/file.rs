@@ -65,10 +65,7 @@ fn to_file(entry: DirEntry) -> File {
 pub fn get_files(path: String, show_all: bool, sort_lex: bool) -> std::io::Result<Vec<File>> {
     let entries = read_dir(path)?;
     let mut files: Vec<File> = entries
-        .map(|entry| match entry {
-            Ok(entry) => to_file(entry),
-            e => panic!(e),
-        })
+        .map(|entry| to_file(entry.unwrap()))
         .filter(|file| {
             if !show_all && file.name.starts_with('.') {
                 return false;
