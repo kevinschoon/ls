@@ -1,8 +1,10 @@
+mod color;
 mod file;
 mod helper;
 mod parser;
 
-pub use crate::file::{get_files, File};
+pub use crate::color::{paint, Color};
+pub use crate::file::{get_files, File, Kind};
 pub use crate::helper::pad_strings;
 pub use crate::parser::parse;
 
@@ -10,9 +12,20 @@ use std::env::args;
 use std::process::exit;
 use std::time::UNIX_EPOCH;
 
+fn to_file_name(file: &File) -> String {
+    match file.kind {
+        Kind::File => paint(file.name.clone(), Color::Normal),
+        Kind::Dir => paint(file.name.clone(), Color::BlueFgBold),
+        Kind::Link => paint(file.name.clone(), Color::CyanFgBold),
+        Kind::Char => paint(file.name.clone(), Color::YellowFgBold),
+        Kind::Socket => paint(file.name.clone(), Color::PurpleFg),
+        _ => paint(file.name.clone(), Color::Normal),
+    }
+}
+
 fn display_short(files: Vec<File>) {
     for file in files {
-        print!("{}  ", file.name)
+        print!("{}  ", to_file_name(&file))
     }
     println!(" ")
 }
@@ -31,7 +44,7 @@ fn display_long(files: Vec<File>) {
                     .unwrap()
                     .as_secs()
                     .to_string(),
-                f.name.clone(),
+                to_file_name(f),
             ]
             .to_vec()
         })
