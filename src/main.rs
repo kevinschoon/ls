@@ -4,7 +4,7 @@ mod helper;
 mod parser;
 
 pub use crate::color::{paint, Color};
-pub use crate::file::{get_files, File, Kind};
+pub use crate::file::{get_files, to_unix_permission, File, Kind};
 pub use crate::helper::pad_strings;
 pub use crate::parser::parse;
 
@@ -35,7 +35,7 @@ fn display_long(files: Vec<File>) {
         .iter()
         .map(|f| {
             [
-                String::from(format!("{}", f.mode & 0o7777).as_str()),
+                to_unix_permission(f.mode),
                 String::from(format!("{}", f.uid).as_str()),
                 String::from(format!("{}", f.gid).as_str()),
                 String::from(format!("{}", f.size).as_str()),
