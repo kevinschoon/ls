@@ -95,7 +95,6 @@ pub fn to_unix_permission(mode: u32) -> String {
         result.push('-')
     }
     // OTHER
-
     if (mode & S_IROTH) != 0 {
         result.push('r')
     } else {
@@ -118,6 +117,47 @@ pub fn to_unix_permission(mode: u32) -> String {
         result.push('-')
     }
     result
+}
+
+pub fn resolve_user(id: u32) -> String {
+    resolve_id(id, "/etc/passwd")
+}
+pub fn resolve_group(id: u32) -> String {
+    resolve_id(id, "/etc/group")
+}
+
+// resolve_id will return a matching user or group
+// identifier if it exists on the host filesystem.
+fn resolve_id(id: u32, file_path: &str) -> String {
+    match std::fs::read_to_string(file_path) {
+        Ok(value) => {
+            let lines: Vec<&str> = value.split('\n').collect();
+            let username: String = lines
+                .iter()
+                .filter_map(|line| {
+                    let line_split: Vec<&str> = line.split(':').collect();
+                    if line_split.len() > 2 {
+                        let user_or_group = line_split.get(0).unwrap().to_string();
+                        let other_id_str = line_split.get(2).unwrap().to_string();
+                        match other_id_str.parse::<u32>() {
+                            Ok(user_id) => {
+                                if user_id == id {
+                                    Some(user_or_group)
+                                } else {
+                                    None
+                                }
+                            }
+                            Err(_) => None,
+                        }
+                    } else {
+                        None
+                    }
+                })
+                .collect();
+            username
+        }
+        Err(_) => String::from("????"),
+    }
 }
 
 fn to_file(entry: DirEntry) -> File {
