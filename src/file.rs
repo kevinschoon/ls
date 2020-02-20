@@ -185,6 +185,7 @@ fn to_file(entry: DirEntry) -> File {
     let md = entry.metadata().unwrap();
     let perms = md.permissions();
     let file_name = entry.file_name().into_string().unwrap();
+    let modified = md.modified().unwrap();
     File {
         name: file_name,
         kind: ftype,
@@ -194,7 +195,7 @@ fn to_file(entry: DirEntry) -> File {
         gid: md.st_gid(),
         mode: perms.mode(),
         atime: md.st_atime(),
-        modified: SystemTime::now(),
+        modified,
     }
 }
 
